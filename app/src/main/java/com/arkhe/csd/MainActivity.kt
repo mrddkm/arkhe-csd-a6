@@ -112,7 +112,14 @@ fun MainScreen(
     imageGenerator: ImageGenerator
 ) {
     val scope = rememberCoroutineScope()
-    var isLoading by remember { mutableStateOf(false) }
+
+    // Separate loading states for each button
+    var isLoadingSharePdfSimple by remember { mutableStateOf(false) }
+    var isLoadingSharePdfCustom by remember { mutableStateOf(false) }
+    var isLoadingDownloadPdfSimple by remember { mutableStateOf(false) }
+    var isLoadingDownloadPdfCustom by remember { mutableStateOf(false) }
+    var isLoadingShareImage by remember { mutableStateOf(false) }
+    var isLoadingDownloadImage by remember { mutableStateOf(false) }
 
     // Sample data
     val sampleText = """
@@ -225,7 +232,7 @@ fun MainScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            isLoading = true
+                            isLoadingSharePdfSimple = true
                             withContext(Dispatchers.IO) {
                                 try {
                                     val pdfFile = pdfGenerator.generateSimplePdf(
@@ -239,13 +246,13 @@ fun MainScreen(
                                     e.printStackTrace()
                                 }
                             }
-                            isLoading = false
+                            isLoadingSharePdfSimple = false
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoadingSharePdfSimple
                 ) {
-                    Text(if (isLoading) "⏳ Processing..." else "📤 Share PDF Sederhana")
+                    Text(if (isLoadingSharePdfSimple) "⏳ Processing..." else "📤 Share PDF Sederhana")
                 }
             }
 
@@ -257,7 +264,7 @@ fun MainScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            isLoading = true
+                            isLoadingSharePdfCustom = true
                             withContext(Dispatchers.IO) {
                                 try {
                                     val sections = listOf(
@@ -291,13 +298,13 @@ fun MainScreen(
                                     e.printStackTrace()
                                 }
                             }
-                            isLoading = false
+                            isLoadingSharePdfCustom = false
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoadingSharePdfCustom
                 ) {
-                    Text(if (isLoading) "⏳ Processing..." else "📤 Share PDF Custom")
+                    Text(if (isLoadingSharePdfCustom) "⏳ Processing..." else "📤 Share PDF Custom")
                 }
             }
 
@@ -309,7 +316,7 @@ fun MainScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            isLoading = true
+                            isLoadingDownloadPdfSimple = true
                             withContext(Dispatchers.IO) {
                                 try {
                                     pdfGenerator.generateSimplePdf(
@@ -321,13 +328,13 @@ fun MainScreen(
                                     e.printStackTrace()
                                 }
                             }
-                            isLoading = false
+                            isLoadingDownloadPdfSimple = false
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoadingDownloadPdfSimple
                 ) {
-                    Text(if (isLoading) "⏳ Processing..." else "💾 Download PDF Sederhana")
+                    Text(if (isLoadingDownloadPdfSimple) "⏳ Processing..." else "💾 Download PDF Sederhana")
                 }
             }
 
@@ -339,7 +346,7 @@ fun MainScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            isLoading = true
+                            isLoadingDownloadPdfCustom = true
                             withContext(Dispatchers.IO) {
                                 try {
                                     val sections = listOf(
@@ -374,13 +381,13 @@ fun MainScreen(
                                     e.printStackTrace()
                                 }
                             }
-                            isLoading = false
+                            isLoadingDownloadPdfCustom = false
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoadingDownloadPdfCustom
                 ) {
-                    Text(if (isLoading) "⏳ Processing..." else "💾 Download PDF Custom")
+                    Text(if (isLoadingDownloadPdfCustom) "⏳ Processing..." else "💾 Download PDF Custom")
                 }
             }
 
@@ -392,7 +399,7 @@ fun MainScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            isLoading = true
+                            isLoadingShareImage = true
                             withContext(Dispatchers.IO) {
                                 try {
                                     val sections = listOf(
@@ -422,13 +429,13 @@ fun MainScreen(
                                     e.printStackTrace()
                                 }
                             }
-                            isLoading = false
+                            isLoadingShareImage = false
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoadingShareImage
                 ) {
-                    Text(if (isLoading) "⏳ Processing..." else "🖼️ Share Image Custom")
+                    Text(if (isLoadingShareImage) "⏳ Processing..." else "🖼️ Share Image Custom")
                 }
             }
 
@@ -440,7 +447,7 @@ fun MainScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            isLoading = true
+                            isLoadingDownloadImage = true
                             withContext(Dispatchers.IO) {
                                 try {
                                     val sections = listOf(
@@ -472,13 +479,13 @@ fun MainScreen(
                                     e.printStackTrace()
                                 }
                             }
-                            isLoading = false
+                            isLoadingDownloadImage = false
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoadingDownloadImage
                 ) {
-                    Text(if (isLoading) "⏳ Processing..." else "💾 Download Image Custom")
+                    Text(if (isLoadingDownloadImage) "⏳ Processing..." else "💾 Download Image Custom")
                 }
             }
 

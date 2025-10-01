@@ -3,6 +3,7 @@
 package com.arkhe.csd.utils
 
 import android.content.Context
+import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -11,7 +12,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
 import java.io.File
 import java.io.FileOutputStream
@@ -89,6 +92,11 @@ class ImageGenerator(private val context: Context) {
             // Save bitmap to file
             FileOutputStream(imageFile).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+
+            // Copy to public directory for download (Android 10+)
+            if (fileName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                copyToPictures(imageFile, imageFileName)
             }
 
             bitmap.recycle()
@@ -215,6 +223,10 @@ class ImageGenerator(private val context: Context) {
     ): Float {
         var y = startY
 
+        // Calculate content height first
+        val lines = wrapText(section.content, IMAGE_WIDTH - (PADDING * 2) - 40, CONTENT_SIZE)
+        val contentHeight = lines.size * CONTENT_SIZE * LINE_SPACING
+
         // Draw section background card
         val cardPaint = Paint().apply {
             color = "#1e2a4a".toColorInt()
@@ -226,8 +238,10 @@ class ImageGenerator(private val context: Context) {
             PADDING.toFloat(),
             y - 20,
             (IMAGE_WIDTH - PADDING).toFloat(),
-            y + 200 // Will be adjusted
+            y + SECTION_TITLE_SIZE + contentHeight + 60
         )
+
+        canvas.drawRoundRect(cardRect, 20f, 20f, cardPaint)
 
         // Draw section title with icon
         val icon = getIconForSection(section.title)
@@ -236,22 +250,6 @@ class ImageGenerator(private val context: Context) {
         y += SECTION_TITLE_SIZE + 40
 
         // Draw content with word wrapping
-        val lines = wrapText(section.content, IMAGE_WIDTH - (PADDING * 2) - 40, CONTENT_SIZE)
-        lines.forEach { line ->
-            canvas.drawText(line, PADDING + 40f, y, contentPaint)
-            y += CONTENT_SIZE * LINE_SPACING
-        }
-
-        // Update card height
-        cardRect.bottom = y + 20
-        canvas.drawRoundRect(cardRect, 20f, 20f, cardPaint)
-
-        // Redraw text on top of card
-        y = startY
-        canvas.drawText(icon, PADDING + 20f, y + SECTION_TITLE_SIZE, titlePaint)
-        canvas.drawText(section.title, PADDING + 80f, y + SECTION_TITLE_SIZE, titlePaint)
-        y += SECTION_TITLE_SIZE + 40
-
         lines.forEach { line ->
             canvas.drawText(line, PADDING + 40f, y, contentPaint)
             y += CONTENT_SIZE * LINE_SPACING
@@ -271,6 +269,10 @@ class ImageGenerator(private val context: Context) {
             title.contains("Total", ignoreCase = true) -> "💰"
             title.contains("Catatan", ignoreCase = true) -> "📌"
             title.contains("Kesimpulan", ignoreCase = true) -> "✅"
+            title.contains("Performa", ignoreCase = true) -> "📊"
+            title.contains("Marketing", ignoreCase = true) -> "📢"
+            title.contains("Promosi", ignoreCase = true) -> "🎁"
+            title.contains("Penjualan", ignoreCase = true) -> "💰"
             else -> "•"
         }
     }
@@ -304,34 +306,43 @@ class ImageGenerator(private val context: Context) {
         }
 
         val lines = mutableListOf<String>()
-        val words = text.split(" ")
-        var currentLine = ""
+        val paragraphs = text.split("\n")
 
-        words.forEach { word ->
-            val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
-            val width = paint.measureText(testLine)
-
-            if (width > maxWidth) {
-                if (currentLine.isNotEmpty()) {
-                    lines.add(currentLine)
-                    currentLine = word
-                } else {
-                    lines.add(word)
-                }
-            } else {
-                currentLine = testLine
+        paragraphs.forEach { paragraph ->
+            if (paragraph.trim().isEmpty()) {
+                lines.add("")
+                return@forEach
             }
-        }
 
-        if (currentLine.isNotEmpty()) {
-            lines.add(currentLine)
+            val words = paragraph.split(" ")
+            var currentLine = ""
+
+            words.forEach { word ->
+                val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
+                val width = paint.measureText(testLine)
+
+                if (width > maxWidth) {
+                    if (currentLine.isNotEmpty()) {
+                        lines.add(currentLine)
+                        currentLine = word
+                    } else {
+                        lines.add(word)
+                    }
+                } else {
+                    currentLine = testLine
+                }
+            }
+
+            if (currentLine.isNotEmpty()) {
+                lines.add(currentLine)
+            }
         }
 
         return lines
     }
 
     private fun createImageFile(fileName: String): File {
-        val imagesDir = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        val imagesDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "Images")
         } else {
             File(
@@ -345,6 +356,33 @@ class ImageGenerator(private val context: Context) {
         }
 
         return File(imagesDir, fileName)
+    }
+
+    private fun copyToPictures(sourceFile: File, fileName: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/CopyShareDownload")
+                }
+
+                val uri = context.contentResolver.insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+
+                uri?.let {
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        sourceFile.inputStream().use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
 

@@ -3,7 +3,10 @@
 package com.arkhe.csd.utils
 
 import android.content.Context
+import android.content.ContentValues
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
 import com.itextpdf.text.BaseColor
 import com.itextpdf.text.Chunk
@@ -50,6 +53,11 @@ class PdfGenerator(private val context: Context) {
             document.add(contentParagraph)
 
             document.close()
+
+            // Copy to public directory for download (Android 10+)
+            if (fileName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                copyToDownloads(pdfFile, pdfFileName)
+            }
 
             Toast.makeText(context, "PDF berhasil dibuat! 📄", Toast.LENGTH_SHORT).show()
             return pdfFile
@@ -127,6 +135,11 @@ class PdfGenerator(private val context: Context) {
 
             document.close()
 
+            // Copy to public directory for download (Android 10+)
+            if (fileName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                copyToDownloads(pdfFile, pdfFileName)
+            }
+
             Toast.makeText(context, "Custom PDF berhasil dibuat! 📄✨", Toast.LENGTH_SHORT).show()
             return pdfFile
 
@@ -138,13 +151,12 @@ class PdfGenerator(private val context: Context) {
     }
 
     private fun createPdfFile(fileName: String): File {
-        val downloadsDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-
         // For Android 10+ (API 29+), use app-specific directory
-        val pdfDir = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        val pdfDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "PDFs")
         } else {
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             File(downloadsDir, "CopyShareDownload")
         }
 
@@ -153,6 +165,33 @@ class PdfGenerator(private val context: Context) {
         }
 
         return File(pdfDir, fileName)
+    }
+
+    private fun copyToDownloads(sourceFile: File, fileName: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/CopyShareDownload")
+                }
+
+                val uri = context.contentResolver.insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+
+                uri?.let {
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        sourceFile.inputStream().use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
 
