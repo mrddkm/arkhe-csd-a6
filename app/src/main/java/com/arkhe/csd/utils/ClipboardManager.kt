@@ -1,3 +1,5 @@
+@file:Suppress("SpellCheckingInspection")
+
 package com.arkhe.csd.utils
 
 import android.content.ClipData

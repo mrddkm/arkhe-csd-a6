@@ -19,7 +19,7 @@ class ShareManager(private val context: Context) {
     fun sharePdf(pdfFile: File) {
         val uri = FileProvider.getUriForFile(
             context,
-            "${context.packageName}.fileprovider",
+            "${context.packageName}.file-provider",
             pdfFile
         )
 
@@ -30,5 +30,21 @@ class ShareManager(private val context: Context) {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(shareIntent, "Share PDF via"))
+    }
+
+    fun shareImage(imageFile: File) {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.file-provider",
+            imageFile
+        )
+
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_STREAM, uri)
+            type = "image/png"
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "Share Image via"))
     }
 }
