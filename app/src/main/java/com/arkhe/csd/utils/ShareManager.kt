@@ -21,16 +21,17 @@ class ShareManager(private val context: Context) {
             context.startActivity(Intent.createChooser(shareIntent, "Share via").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
+            Toast.makeText(context, "✅ Membuka opsi share...", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error sharing text: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "❌ Error sharing text: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun sharePdf(pdfFile: File) {
         try {
             if (!pdfFile.exists()) {
-                Toast.makeText(context, "File PDF tidak ditemukan", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "❌ File PDF tidak ditemukan", Toast.LENGTH_SHORT).show()
                 return
             }
 
@@ -51,16 +52,18 @@ class ShareManager(private val context: Context) {
             context.startActivity(Intent.createChooser(shareIntent, "Share PDF via").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
+
+            Toast.makeText(context, "✅ Membuka opsi share PDF...", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error sharing PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "❌ Error sharing PDF: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
     fun shareImage(imageFile: File) {
         try {
             if (!imageFile.exists()) {
-                Toast.makeText(context, "File Image tidak ditemukan", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "❌ File Image tidak ditemukan", Toast.LENGTH_SHORT).show()
                 return
             }
 
@@ -81,9 +84,11 @@ class ShareManager(private val context: Context) {
             context.startActivity(Intent.createChooser(shareIntent, "Share Image via").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
+
+            Toast.makeText(context, "✅ Membuka opsi share Image...", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error sharing image: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "❌ Error sharing image: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 }

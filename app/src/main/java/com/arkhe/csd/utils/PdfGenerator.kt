@@ -15,6 +15,8 @@ import com.itextpdf.text.Element
 import com.itextpdf.text.Font
 import com.itextpdf.text.Paragraph
 import com.itextpdf.text.pdf.PdfWriter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -25,7 +27,7 @@ class PdfGenerator(private val context: Context) {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault())
 
-    fun generateSimplePdf(
+    suspend fun generateSimplePdf(
         title: String,
         content: String,
         fileName: String? = null
@@ -55,21 +57,33 @@ class PdfGenerator(private val context: Context) {
             document.close()
 
             // Copy to public directory for download (Android 10+)
-            if (fileName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                copyToDownloads(pdfFile, pdfFileName)
+            if (fileName != null) {
+                val publicPath = copyToDownloads(pdfFile, pdfFileName)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "✅ PDF berhasil disimpan!\n📁 $publicPath",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "✅ PDF berhasil dibuat!", Toast.LENGTH_SHORT).show()
+                }
             }
 
-            Toast.makeText(context, "PDF berhasil dibuat! 📄", Toast.LENGTH_SHORT).show()
             return pdfFile
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "❌ Error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
             throw e
         }
     }
 
-    fun generateCustomPdf(
+    suspend fun generateCustomPdf(
         title: String,
         sections: List<PdfSection>,
         fileName: String? = null
@@ -136,16 +150,28 @@ class PdfGenerator(private val context: Context) {
             document.close()
 
             // Copy to public directory for download (Android 10+)
-            if (fileName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                copyToDownloads(pdfFile, pdfFileName)
+            if (fileName != null) {
+                val publicPath = copyToDownloads(pdfFile, pdfFileName)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "✅ PDF Custom berhasil disimpan!\n📁 $publicPath",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "✅ PDF Custom berhasil dibuat!", Toast.LENGTH_SHORT).show()
+                }
             }
 
-            Toast.makeText(context, "Custom PDF berhasil dibuat! 📄✨", Toast.LENGTH_SHORT).show()
             return pdfFile
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "❌ Error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
             throw e
         }
     }
@@ -167,7 +193,7 @@ class PdfGenerator(private val context: Context) {
         return File(pdfDir, fileName)
     }
 
-    private fun copyToDownloads(sourceFile: File, fileName: String) {
+    private fun copyToDownloads(sourceFile: File, fileName: String): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
                 val contentValues = ContentValues().apply {
@@ -188,9 +214,19 @@ class PdfGenerator(private val context: Context) {
                         }
                     }
                 }
+
+                return "Downloads/CopyShareDownload/$fileName"
             } catch (e: Exception) {
                 e.printStackTrace()
+                return "Error: ${e.message}"
             }
+        } else {
+            val publicFile = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "CopyShareDownload/$fileName"
+            )
+            sourceFile.copyTo(publicFile, overwrite = true)
+            return "Downloads/CopyShareDownload/$fileName"
         }
     }
 }

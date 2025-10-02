@@ -16,13 +16,15 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.toColorInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.toColorInt
 
 class ImageGenerator(private val context: Context) {
 
@@ -37,7 +39,7 @@ class ImageGenerator(private val context: Context) {
         private const val LINE_SPACING = 1.5f
     }
 
-    fun generateImage(
+    suspend fun generateImage(
         title: String,
         sections: List<ImageSection>,
         fileName: String? = null
@@ -95,18 +97,30 @@ class ImageGenerator(private val context: Context) {
             }
 
             // Copy to public directory for download (Android 10+)
-            if (fileName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                copyToPictures(imageFile, imageFileName)
+            if (fileName != null) {
+                val publicPath = copyToPictures(imageFile, imageFileName)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "✅ Image berhasil disimpan!\n📁 $publicPath",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "✅ Image berhasil dibuat!", Toast.LENGTH_SHORT).show()
+                }
             }
 
             bitmap.recycle()
 
-            Toast.makeText(context, "Image berhasil dibuat! 🖼️", Toast.LENGTH_SHORT).show()
             return imageFile
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "❌ Error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
             throw e
         }
     }
@@ -358,7 +372,7 @@ class ImageGenerator(private val context: Context) {
         return File(imagesDir, fileName)
     }
 
-    private fun copyToPictures(sourceFile: File, fileName: String) {
+    private fun copyToPictures(sourceFile: File, fileName: String): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
                 val contentValues = ContentValues().apply {
@@ -379,9 +393,19 @@ class ImageGenerator(private val context: Context) {
                         }
                     }
                 }
+
+                return "Pictures/CopyShareDownload/$fileName"
             } catch (e: Exception) {
                 e.printStackTrace()
+                return "Error: ${e.message}"
             }
+        } else {
+            val publicFile = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                "CopyShareDownload/$fileName"
+            )
+            sourceFile.copyTo(publicFile, overwrite = true)
+            return "Pictures/CopyShareDownload/$fileName"
         }
     }
 }
